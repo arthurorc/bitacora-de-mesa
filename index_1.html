@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Bitácora de Mesa</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bitácora">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#7a1f3d">
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: columna única tipo app móvil; encabezado + pestañas, tarjetas por restaurante con barras por rubro */
+:root{
+  color-scheme:light;
+  --bg:#f6f4f1; --surface:#ffffff; --ink:#221a1d; --muted:#6f6266; --line:#e6dfe0;
+  --wine:#7a1f3d; --wine-soft:#f3e4e9; --star:#e0a100; --star-off:#ddd3d5;
+  --a:#7a1f3d; --b:#1f6b6a; --c:#9a5600; --d:#4a4fa8;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  color-scheme:dark;
+  --bg:#171214; --surface:#221b1e; --ink:#f2eaec; --muted:#ad9fa4; --line:#3a2f33;
+  --wine:#e0839f; --wine-soft:#3b222b; --star:#f2b928; --star-off:#4a3e42;
+  --a:#e0839f; --b:#6cc4c2; --c:#f0a85a; --d:#a3a7f2}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:640px;margin:0 auto;padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:calc(48px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+header h1{font-family:var(--display);font-weight:800;font-size:2rem;letter-spacing:-.02em;margin:0;line-height:1.1;text-wrap:balance}
+header p{margin:4px 0 0;color:var(--muted)}
+.who-bar{text-align:right;flex-shrink:0;max-width:45%}
+.who-bar small{display:block;color:var(--muted);font-size:12px;overflow-wrap:anywhere;margin-bottom:4px}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px;margin:18px 0}
+.tabs button{flex:1;border:0;background:transparent;color:var(--muted);font:600 14px var(--body);padding:10px 6px;border-radius:9px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--wine);color:var(--surface)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,.star:focus-visible{outline:2px solid var(--wine);outline-offset:2px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+input[type=text],input[type=date],input[type=email],input[type=password],textarea{width:100%;font:16px var(--body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+textarea{min-height:84px;resize:vertical}
+input[type=date]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;min-height:46px;text-align:left}
+input[type=date]::-webkit-date-and-time-value{text-align:left;margin:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rubro{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.rubro:last-child{border-bottom:0}
+.rubro span{font-weight:500}
+.stars{display:flex;gap:2px}
+.star{background:none;border:0;padding:4px;cursor:pointer;line-height:0}
+.star svg{width:28px;height:28px;fill:var(--star-off);transition:fill .12s}
+.star.on svg{fill:var(--star)}
+.btn{border:0;background:var(--wine);color:var(--surface);font:600 15px var(--body);padding:13px 16px;border-radius:12px;cursor:pointer;width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+.ghost{background:none;border:1px solid var(--line);color:var(--muted);font:500 13px var(--body);padding:6px 10px;border-radius:8px;cursor:pointer}
+.ghost.wide{width:100%;padding:12px;font-size:15px;color:var(--ink)}
+.msg{font-size:14px;min-height:1.2em;color:var(--muted)}
+.msg.err{color:#c0392b}
+.rest-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.rest-name{font-family:var(--display);font-weight:600;font-size:1.25rem;margin:0;line-height:1.2;overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:13px}
+.score{text-align:right;flex-shrink:0}
+.score b{font-family:var(--display);font-weight:800;font-size:2rem;line-height:1;font-variant-numeric:tabular-nums}
+.score small{display:block;color:var(--muted);font-size:12px}
+.mini-stars{display:inline-flex;gap:1px;vertical-align:middle}
+.mini-stars svg{width:14px;height:14px}
+.people{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.chip{font-size:13px;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.chip i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.bars{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;margin-top:14px;font-size:13px}
+.bar{height:8px;background:var(--line);border-radius:4px;position:relative;overflow:hidden}
+.bar div{position:absolute;inset:0 auto 0 0;background:var(--star);border-radius:4px}
+.num{font-variant-numeric:tabular-nums;color:var(--muted);text-align:right;min-width:2.2em}
+details{margin-top:12px}
+summary{cursor:pointer;color:var(--wine);font-weight:600;font-size:14px}
+.visit{border-top:1px solid var(--line);padding-top:10px;margin-top:10px;font-size:14px}
+.visit.first{border-top:0;margin-top:0;padding-top:0}
+.visit-head{display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+.who{font-weight:600}
+.notes{margin:6px 0 0;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.dish{color:var(--muted);margin:4px 0 0}
+.confirm{display:flex;gap:8px;align-items:center;margin-top:8px;font-size:13px}
+.confirm .del{background:#c0392b;color:#fff;border:0;border-radius:8px;padding:6px 10px;font:600 13px var(--body);cursor:pointer}
+.empty{text-align:center;padding:32px 16px;color:var(--muted)}
+.empty h2{font-family:var(--display);color:var(--ink);font-size:1.3rem;margin:0 0 6px}
+.auth h2{font-family:var(--display);font-weight:600;font-size:1.4rem;margin:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--ink);color:var(--bg);font-weight:600;padding:12px 18px;border-radius:12px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;max-width:calc(100% - 32px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.err{background:#c0392b;color:#fff}
+[hidden]{display:none!important}
+@media (max-width:420px){.row2{grid-template-columns:1fr}.star svg{width:26px;height:26px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Bitácora de Mesa</h1>
+      <p>Tus restaurantes y calificaciones. Solo tú ves esta lista.</p>
+    </div>
+    <div class="who-bar" id="who-bar" hidden>
+      <small id="who-email"></small>
+      <button class="ghost" id="btn-salir" type="button">Salir</button>
+    </div>
+  </header>
+
+  <!-- Pantalla de acceso -->
+  <section id="auth" class="auth" hidden style="margin-top:18px">
+    <form id="auth-form" class="card stack" novalidate>
+      <h2>Entra a tu bitácora</h2>
+      <p class="meta" style="margin:0">Usa tu correo y una contraseña. Si es tu primera vez, toca Crear cuenta.</p>
+      <div class="field">
+        <label class="label" for="a-email">Correo</label>
+        <input type="email" id="a-email" autocomplete="email" inputmode="email" autocapitalize="none" placeholder="tucorreo@ejemplo.com">
+      </div>
+      <div class="field">
+        <label class="label" for="a-pass">Contraseña (mínimo 6 caracteres)</label>
+        <input type="password" id="a-pass" autocomplete="current-password" placeholder="••••••">
+      </div>
+      <button class="btn" id="a-login" type="submit">Entrar</button>
+      <button class="ghost wide" id="a-signup" type="button">Crear cuenta</button>
+      <div class="msg" id="a-msg" role="status"></div>
+    </form>
+  </section>
+
+  <!-- App -->
+  <div id="app" hidden>
+    <nav class="tabs" role="tablist">
+      <button id="tab-ranking" role="tab" aria-selected="true" data-view="ranking">Restaurantes</button>
+      <button id="tab-calificar" role="tab" aria-selected="false" data-view="calificar">Calificar</button>
+      <button id="tab-historial" role="tab" aria-selected="false" data-view="historial">Historial</button>
+    </nav>
+
+    <section id="view-ranking" class="stack"></section>
+
+    <section id="view-calificar" hidden>
+      <form id="form" class="card stack" novalidate>
+        <div class="field">
+          <label class="label" for="f-lugar">Restaurante</label>
+          <input type="text" id="f-lugar" list="lugares" placeholder="Ej. Taquería El Paisa" autocomplete="off">
+          <datalist id="lugares"></datalist>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label class="label" for="f-fecha">Fecha</label>
+            <input type="date" id="f-fecha">
+          </div>
+          <div class="field">
+            <label class="label" for="f-quien">¿Quién califica?</label>
+            <input type="text" id="f-quien" list="personas" placeholder="Ej. Arturo" autocomplete="off">
+            <datalist id="personas"></datalist>
+          </div>
+        </div>
+        <div>
+          <span class="label">Calificación</span>
+          <div id="rubros"></div>
+        </div>
+        <div class="field">
+          <label class="label" for="f-platillos">Qué pedimos</label>
+          <input type="text" id="f-platillos" placeholder="Ej. Tacos al pastor, agua de horchata">
+        </div>
+        <div class="field">
+          <label class="label" for="f-notas">Notas</label>
+          <textarea id="f-notas" placeholder="Lo que recuerdes: qué volverías a pedir, si había espera, estacionamiento..."></textarea>
+        </div>
+        <button class="btn" id="f-guardar" type="submit">Guardar calificación</button>
+        <div class="msg" id="f-msg" role="status"></div>
+      </form>
+    </section>
+
+    <section id="view-historial" class="stack" hidden></section>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+<script>
+/* ===== Conexión con Supabase =====
+   La URL y la llave "publishable" son públicas por diseño.
+   La privacidad la dan las reglas (RLS) de la tabla "visitas". */
+const SUPABASE_URL = "https://oslunlkawpjhclfowulg.supabase.co";
+const SUPABASE_KEY = "sb_publishable_P7xs9mB_jcN-1IpUz_tPmA_Byrp4STG";
+
+const RUBROS=[["sabor","Sabor"],["servicio","Servicio"],["ambiente","Ambiente"],["precio","Precio"],["banos","Baños"]];
+const STAR='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg>';
+const COLORES=["--a","--b","--c","--d"];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $=id=>document.getElementById(id);
+
+let sb=null, sesion=null, visitas=[], estado="cargando", errorCarga="", pendienteBorrar=null, colorDe={}, abiertos=[], ultimaCarga=0;
+const form={};
+
+let toastT;
+function toast(t,err){const el=$("toast");el.textContent=t;el.className="toast show"+(err?" err":"");clearTimeout(toastT);toastT=setTimeout(()=>el.className="toast",3200)}
+
+function traducir(e){
+  const m=String((e&&e.message)||e||"");
+  if(/invalid login credentials/i.test(m))return "Correo o contraseña incorrectos.";
+  if(/already registered|already been registered/i.test(m))return "Ese correo ya tiene cuenta. Toca Entrar.";
+  if(/at least 6 characters|weak password/i.test(m))return "La contraseña debe tener al menos 6 caracteres.";
+  if(/signups? not allowed|signup is disabled/i.test(m))return "Los registros nuevos están cerrados.";
+  if(/email not confirmed/i.test(m))return "Falta confirmar el correo de esta cuenta.";
+  if(/valid email|invalid format|unable to validate email/i.test(m))return "Escribe un correo válido.";
+  if(/rate limit|too many/i.test(m))return "Demasiados intentos. Espera unos minutos.";
+  if(/failed to fetch|networkerror|load failed|network request/i.test(m))return "Sin conexión. Revisa tu internet.";
+  return m||"Ocurrió un error.";
+}
+
+/* ---------- pestañas ---------- */
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>mostrar(b.dataset.view));
+function mostrar(v){
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.view===v));
+  ["ranking","calificar","historial"].forEach(x=>$("view-"+x).hidden=x!==v);
+}
+
+/* ---------- formulario de calificación ---------- */
+function hoy(){const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)}
+$("f-fecha").value=hoy();
+$("rubros").innerHTML=RUBROS.map(([k,n])=>`<div class="rubro"><span>${n}</span><div class="stars" data-k="${k}">${[1,2,3,4,5].map(i=>`<button type="button" class="star" data-v="${i}" aria-label="${n}: ${i} de 5">${STAR}</button>`).join("")}</div></div>`).join("");
+document.querySelectorAll("#rubros .stars").forEach(g=>{
+  g.addEventListener("click",e=>{const b=e.target.closest(".star");if(!b)return;form[g.dataset.k]=+b.dataset.v;pintarEstrellas()});
+});
+function pintarEstrellas(){document.querySelectorAll("#rubros .stars").forEach(g=>{const v=form[g.dataset.k]||0;g.querySelectorAll(".star").forEach(b=>b.classList.toggle("on",+b.dataset.v<=v))})}
+
+$("form").addEventListener("submit",async e=>{
+  e.preventDefault();
+  const msg=$("f-msg");msg.className="msg";msg.textContent="";
+  const lugar=$("f-lugar").value.trim().replace(/\s+/g," ");
+  const quien=$("f-quien").value.trim().replace(/\s+/g," ");
+  if(!lugar){msg.className="msg err";msg.textContent="Escribe el nombre del restaurante.";toast("Falta el restaurante",true);return}
+  if(!quien){msg.className="msg err";msg.textContent="Escribe quién califica.";toast("Falta quién califica",true);return}
+  const faltan=RUBROS.filter(([k])=>!form[k]).map(([,n])=>n);
+  if(faltan.length){msg.className="msg err";msg.textContent="Falta calificar: "+faltan.join(", ")+".";toast("Falta calificar: "+faltan.join(", "),true);return}
+  const doc={lugar,fecha:$("f-fecha").value||hoy(),persona:quien,platillos:$("f-platillos").value.trim(),notas:$("f-notas").value.trim()};
+  RUBROS.forEach(([k])=>doc[k]=form[k]);
+  $("f-guardar").disabled=true;msg.textContent="Guardando…";
+  try{
+    const {error}=await sb.from("visitas").insert(doc);
+    if(error)throw error;
+    RUBROS.forEach(([k])=>delete form[k]);pintarEstrellas();
+    ["f-lugar","f-quien","f-platillos","f-notas"].forEach(id=>$(id).value="");$("f-fecha").value=hoy();
+    msg.textContent="";
+    toast("✓ Calificación de "+quien+" guardada");
+    window.scrollTo({top:0,behavior:"smooth"});
+    cargar(true);
+  }catch(err){toast("No se guardó",true);msg.className="msg err";msg.textContent=traducir(err)}
+  finally{$("f-guardar").disabled=false}
+});
+
+/* ---------- cálculos ---------- */
+const prom=arr=>arr.length?arr.reduce((s,x)=>s+x,0)/arr.length:null;
+const promVisita=v=>prom(RUBROS.map(([k])=>+v[k]||0));
+const fmt=n=>n==null?"–":n.toFixed(1);
+const persona=v=>String(v.persona||"Sin nombre");
+const fechaTxt=f=>{try{return new Date(f+"T12:00:00").toLocaleDateString("es-MX",{day:"numeric",month:"short",year:"numeric"})}catch(e){return f}};
+function miniEstrellas(n){const r=Math.round(n||0);return `<span class="mini-stars">${[1,2,3,4,5].map(i=>`<span style="fill:var(${i<=r?"--star":"--star-off"})">${STAR}</span>`).join("")}</span>`}
+
+function agrupar(){
+  const m=new Map();
+  visitas.forEach(v=>{const k=v.lugar.toLowerCase();if(!m.has(k))m.set(k,{nombre:v.lugar,vs:[]});m.get(k).vs.push(v)});
+  return [...m.values()].map(g=>{
+    g.vs.sort((x,y)=>(y.fecha||"").localeCompare(x.fecha||"")||y.ts-x.ts);
+    g.total=prom(g.vs.map(promVisita));
+    g.per=[...new Set(g.vs.map(persona))].map(n=>[n,prom(g.vs.filter(v=>persona(v)===n).map(promVisita))]);
+    g.rub=Object.fromEntries(RUBROS.map(([k])=>[k,prom(g.vs.map(v=>+v[k]||0))]));
+    g.salidas=new Set(g.vs.map(v=>v.fecha)).size;
+    return g;
+  }).sort((x,y)=>y.total-x.total);
+}
+
+function visitaHTML(v,conLugar,primero){
+  const n=persona(v);
+  return `<div class="visit${primero?" first":""}">
+    <div class="visit-head"><span><span class="who" style="color:var(${colorDe[n]||"--ink"})">${esc(n)}</span>${conLugar?` · <b>${esc(v.lugar)}</b>`:""} · <span class="meta">${esc(fechaTxt(v.fecha))}</span></span>
+    <span>${miniEstrellas(promVisita(v))} <span class="num">${fmt(promVisita(v))}</span></span></div>
+    <div class="meta">${RUBROS.map(([k,n])=>`${n} ${esc(v[k])}`).join(" · ")}</div>
+    ${v.platillos?`<p class="dish">Pedimos: ${esc(v.platillos)}</p>`:""}
+    ${v.notas?`<p class="notes">${esc(v.notas)}</p>`:""}
+    ${pendienteBorrar===v.id?`<div class="confirm">¿Borrar esta calificación? <button class="del" data-del="${esc(v.id)}">Borrar</button><button class="ghost" data-cancel>Cancelar</button></div>`:`<div class="confirm"><button class="ghost" data-ask="${esc(v.id)}">Borrar</button></div>`}
+  </div>`;
+}
+
+/* ---------- pintar pantalla ---------- */
+function guardarAbiertos(){abiertos=[...document.querySelectorAll("#view-ranking details")].map(d=>d.open)}
+function restaurarAbiertos(){document.querySelectorAll("#view-ranking details").forEach((d,i)=>{if(abiertos[i])d.open=true})}
+
+function render(){
+  const r=$("view-ranking"),h=$("view-historial");
+  const gente=[...new Set(visitas.map(persona))];colorDe={};gente.forEach((n,i)=>colorDe[n]=COLORES[i%COLORES.length]);
+  $("personas").innerHTML=gente.map(n=>`<option value="${esc(n)}">`).join("");
+  $("lugares").innerHTML=[...new Set(visitas.map(v=>v.lugar))].map(l=>`<option value="${esc(l)}">`).join("");
+  if(estado==="cargando"){r.innerHTML=h.innerHTML=`<div class="card empty">Cargando calificaciones…</div>`;return}
+  if(estado==="error"){r.innerHTML=h.innerHTML=`<div class="card empty"><h2>No se pudo cargar</h2>${esc(errorCarga)}<div style="margin-top:14px"><button class="btn" style="width:auto" onclick="cargar()">Reintentar</button></div></div>`;return}
+  if(!visitas.length){
+    const e=`<div class="card empty"><h2>Aún no hay restaurantes</h2>Después de tu próxima salida, entra a <b>Calificar</b>, escribe el lugar y pon tus estrellas. Aquí aparecerá tu ranking de restaurantes.<div style="margin-top:14px"><button class="btn" style="width:auto" onclick="mostrar('calificar')">Calificar el primero</button></div></div>`;
+    r.innerHTML=e;h.innerHTML=e;return;
+  }
+  const gs=agrupar();
+  r.innerHTML=gs.map((g,i)=>`<article class="card">
+    <div class="rest-top">
+      <div style="min-width:0"><div class="label">#${i+1}</div><h2 class="rest-name">${esc(g.nombre)}</h2>
+      <div class="meta">${g.salidas} ${g.salidas===1?"visita":"visitas"} · última ${esc(fechaTxt(g.vs[0].fecha))}</div></div>
+      <div class="score"><b>${fmt(g.total)}</b><small>de 5</small></div>
+    </div>
+    <div class="people">
+      ${g.per.map(([n,v])=>`<span class="chip"><i style="background:var(${colorDe[n]})"></i>${esc(n)} ${fmt(v)}</span>`).join("")}
+    </div>
+    <div class="bars">${RUBROS.map(([k,n])=>`<span>${n}</span><div class="bar"><div style="width:${(g.rub[k]||0)/5*100}%"></div></div><span class="num">${fmt(g.rub[k])}</span>`).join("")}</div>
+    <details><summary>Ver calificaciones y notas (${g.vs.length})</summary>${g.vs.map(v=>visitaHTML(v,false)).join("")}</details>
+  </article>`).join("");
+  const orden=[...visitas].sort((x,y)=>(y.fecha||"").localeCompare(x.fecha||"")||y.ts-x.ts);
+  h.innerHTML=`<div class="card">${orden.map((v,i)=>visitaHTML(v,true,i===0)).join("")}</div>`;
+}
+
+document.addEventListener("click",async e=>{
+  const ask=e.target.closest("[data-ask]"),del=e.target.closest("[data-del]"),can=e.target.closest("[data-cancel]");
+  if(ask){pendienteBorrar=ask.dataset.ask;guardarAbiertos();render();restaurarAbiertos()}
+  else if(can){pendienteBorrar=null;guardarAbiertos();render();restaurarAbiertos()}
+  else if(del){
+    const id=del.dataset.del;pendienteBorrar=null;
+    const {error}=await sb.from("visitas").delete().eq("id",id);
+    if(error)toast("No se pudo borrar: "+traducir(error),true);else toast("Calificación borrada");
+    cargar(true);
+  }
+});
+
+/* ---------- datos ---------- */
+async function cargar(silencioso){
+  if(!sesion)return;
+  if(!silencioso){estado="cargando";render()}
+  const {data,error}=await sb.from("visitas").select("*").order("fecha",{ascending:false}).order("creado",{ascending:false}).limit(1000);
+  if(error){if(!silencioso||!visitas.length){estado="error";errorCarga=traducir(error);render()}else toast(traducir(error),true);return}
+  visitas=data.map(v=>({...v,ts:Date.parse(v.creado)||0}));
+  estado="listo";ultimaCarga=Date.now();
+  guardarAbiertos();render();restaurarAbiertos();
+}
+
+/* ---------- acceso ---------- */
+function pantalla(){
+  const dentro=!!sesion;
+  $("auth").hidden=dentro;$("app").hidden=!dentro;$("who-bar").hidden=!dentro;
+  $("who-email").textContent=dentro?(sesion.user.email||""):"";
+}
+async function entrar(registro){
+  const msg=$("a-msg");msg.className="msg";msg.textContent="";
+  const email=$("a-email").value.trim(),password=$("a-pass").value;
+  if(!email||!password){msg.className="msg err";msg.textContent="Escribe tu correo y tu contraseña.";return}
+  $("a-login").disabled=$("a-signup").disabled=true;msg.textContent=registro?"Creando cuenta…":"Entrando…";
+  try{
+    if(registro){
+      const {data,error}=await sb.auth.signUp({email,password});
+      if(error)throw error;
+      if(!data.session){msg.textContent="Cuenta creada. Si tu proyecto pide confirmar el correo, revisa tu bandeja y luego toca Entrar.";return}
+    }else{
+      const {error}=await sb.auth.signInWithPassword({email,password});
+      if(error)throw error;
+    }
+    msg.textContent="";$("a-pass").value="";
+  }catch(err){msg.className="msg err";msg.textContent=traducir(err)}
+  finally{$("a-login").disabled=$("a-signup").disabled=false}
+}
+$("auth-form").addEventListener("submit",e=>{e.preventDefault();entrar(false)});
+$("a-signup").onclick=()=>entrar(true);
+$("btn-salir").onclick=async()=>{await sb.auth.signOut()};
+
+/* ---------- arranque ---------- */
+if(!window.supabase){
+  $("auth").hidden=false;
+  $("a-msg").className="msg err";$("a-msg").textContent="No se pudo cargar Supabase. Revisa tu conexión y recarga la página.";
+}else{
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  sb.auth.onAuthStateChange((evento,s)=>{
+    sesion=s;
+    setTimeout(()=>{
+      pantalla();
+      if(!s){visitas=[];estado="cargando";render();return}
+      if(evento==="INITIAL_SESSION"||evento==="SIGNED_IN")cargar();
+    },0);
+  });
+  document.addEventListener("visibilitychange",()=>{
+    if(document.visibilityState==="visible"&&sesion&&Date.now()-ultimaCarga>30000)cargar(true);
+  });
+}
+</script>
+</body>
+</html>
